@@ -60,6 +60,7 @@ app.get('/api/settings', (_req, res) => {
   masked.llm.apiKey = mask(settings.llm.apiKey);
   masked.tts.apiKey = mask(settings.tts.apiKey);
   masked.pexels.apiKey = mask(settings.pexels.apiKey);
+  masked.pixabay.apiKey = mask(settings.pixabay?.apiKey ?? '');
   masked.youtube.clientSecret = mask(settings.youtube.clientSecret);
   masked.youtube.refreshToken = mask(settings.youtube.refreshToken);
   masked.tiktok.accessToken = mask(settings.tiktok.accessToken);
@@ -77,6 +78,8 @@ app.put('/api/settings', (req, res) => {
       llm: { ...current.llm, ...inc.llm },
       tts: { ...current.tts, ...inc.tts },
       pexels: { ...current.pexels, ...inc.pexels },
+      pixabay: { apiKey: inc.pixabay?.apiKey ?? '' },
+      stock: { provider: inc.stock?.provider ?? current.stock?.provider ?? 'pixabay' },
       youtube: { ...current.youtube, ...inc.youtube },
       tiktok: { ...current.tiktok, ...inc.tiktok },
       worker: { ...current.worker, ...inc.worker },
@@ -88,6 +91,8 @@ app.put('/api/settings', (req, res) => {
     merged.llm.apiKey = keepSecret(current.llm.apiKey, merged.llm.apiKey);
     merged.tts.apiKey = keepSecret(current.tts.apiKey, merged.tts.apiKey);
     merged.pexels.apiKey = keepSecret(current.pexels.apiKey, merged.pexels.apiKey);
+    merged.pixabay = merged.pixabay ?? { apiKey: '' };
+    merged.pixabay.apiKey = keepSecret(current.pixabay?.apiKey ?? '', merged.pixabay.apiKey);
     merged.youtube.clientSecret = keepSecret(current.youtube.clientSecret, merged.youtube.clientSecret);
     merged.youtube.refreshToken = keepSecret(current.youtube.refreshToken, merged.youtube.refreshToken);
     merged.tiktok.accessToken = keepSecret(current.tiktok.accessToken, merged.tiktok.accessToken);

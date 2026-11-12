@@ -383,9 +383,11 @@ async function renderConfig(el) {
       </div>
 
       <div class="rounded-2xl border border-forge-border bg-forge-panel p-6 space-y-3">
-        <h2 class="font-bold">Banco de midia licenciada (Pexels)</h2>
-        <p class="text-xs text-forge-muted -mt-2">Chave gratuita em pexels.com/api. Os videos/fotos sao usados conforme a licenca Pexels (uso comercial permitido, sem atribuicao obrigatoria).</p>
-        ${field('Pexels API Key', 'pexels_apiKey', SETTINGS.pexels.apiKey, 'sua chave gratuita')}
+        <h2 class="font-bold">Banco de midia licenciada</h2>
+        <p class="text-xs text-forge-muted -mt-2">Pixabay: chave gratuita emitida na hora em pixabay.com/api/docs/ (apos criar a conta, a key aparece no topo da pagina). Licenca Pixabay permite uso comercial sem atribuicao. Pexels: opcional, usado como fallback se configurado (cadastro de novas chaves atualmente pausado).</p>
+        ${select('Provedor principal', 'stock_provider', SETTINGS.stock?.provider || 'pixabay', [['pixabay', 'Pixabay (recomendado)'], ['pexels', 'Pexels']])}
+        ${field('Pixabay API Key', 'pixabay_apiKey', SETTINGS.pixabay?.apiKey || '', 'sua chave gratuita')}
+        ${field('Pexels API Key (fallback, opcional)', 'pexels_apiKey', SETTINGS.pexels.apiKey, 'opcional')}
       </div>
 
       <div class="rounded-2xl border border-forge-border bg-forge-panel p-6 space-y-3">
@@ -442,6 +444,8 @@ async function renderConfig(el) {
         llm: { baseUrl: v('llm_baseUrl'), apiKey: v('llm_apiKey'), model: v('llm_model') },
         tts: { provider: v('tts_provider'), baseUrl: v('tts_baseUrl') || SETTINGS.tts.baseUrl, apiKey: v('tts_apiKey') || SETTINGS.tts.apiKey, model: v('tts_model') || SETTINGS.tts.model, voice: v('tts_voice') },
         pexels: { apiKey: v('pexels_apiKey') },
+        pixabay: { apiKey: v('pixabay_apiKey') },
+        stock: { provider: v('stock_provider') },
         youtube: { clientId: v('youtube_clientId'), clientSecret: v('youtube_clientSecret'), refreshToken: v('youtube_refreshToken'), privacy: v('youtube_privacy') },
         tiktok: { accessToken: v('tiktok_accessToken'), privacy: v('tiktok_privacy') },
         worker: { enabled: v('worker_enabled') === 'true', intervalMin: num('worker_intervalMin', 5), dailyTarget: num('worker_dailyTarget', 3), scheduleHours: v('worker_scheduleHours') },

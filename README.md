@@ -18,7 +18,7 @@ shortforge/
 - **Node.js >= 20** (ou Bun) e npm
 - **FFmpeg** no PATH: `sudo apt install ffmpeg`
 - **edge-tts** (narracao gratuita): `pip install edge-tts`
-- Uma **API key gratuita do Pexels**: https://www.pexels.com/api/
+- Uma **API key gratuita da Pixabay** (emitida na hora): https://pixabay.com/api/docs/ . Pexels (https://www.pexels.com/api/) e opcional como fallback
 - Uma API de LLM (gratuita ou paga):
   - **Gratuita**: OpenRouter (modelos `:free`, ex. `deepseek/deepseek-chat-v3.1:free`) ou Groq (`llama-3.3-70b-versatile`)
   - **Paga (Z.ai GLM)**: Base URL `https://api.z.ai/api/paas/v4`, modelo `glm-4.6`
@@ -62,7 +62,7 @@ O backend ja serve o frontend em `http://SEU-SERVIDOR:3010`. Para expor fora de 
 
 ## Licenca de conteudo
 
-Todo o material visual vem do Pexels (licenca Pexels: uso comercial permitido). Nenhum conteudo de terceiros do YouTube/TikTok e baixado ou republicado.
+Todo o material visual vem da Pixabay (licenca Pixabay: uso comercial permitido, sem atribuicao obrigatoria) e/ou Pexels. Nenhum conteudo de terceiros do YouTube/TikTok e baixado ou republicado.
 
 ## Sub-caminho (opcional)
 

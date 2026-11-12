@@ -40,6 +40,8 @@ export const DEFAULT_SETTINGS: Settings = {
     model: 'gpt-4o-mini-tts',
     voice: 'pt-BR-AntonioNeural',
   },
+  stock: { provider: 'pixabay' },
+  pixabay: { apiKey: '' },
   pexels: { apiKey: '' },
   youtube: { clientId: '', clientSecret: '', refreshToken: '', privacy: 'public' },
   tiktok: { accessToken: '', privacy: 'SELF_ONLY' },

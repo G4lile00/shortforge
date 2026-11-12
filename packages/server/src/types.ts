@@ -76,6 +76,8 @@ export interface Settings {
     model: string;     // ex: tts-1
     voice: string;     // ex: pt-BR-AntonioNeural (edge) ou alloy (openai)
   };
+  stock: { provider: 'pixabay' | 'pexels' };
+  pixabay: { apiKey: string };
   pexels: { apiKey: string };
   youtube: {
     clientId: string;
