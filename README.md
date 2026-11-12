@@ -73,3 +73,13 @@ BASE_PATH=/forge/ npm start
 ```
 
 Por padrao o app responde na raiz (`/`).
+
+## Rotacao de modelos gratuitos (OpenRouter)
+
+No campo **Modelos** das Configuracoes, informe varios modelos separados por virgula, ex.:
+
+```
+deepseek/deepseek-chat-v3.1:free,meta-llama/llama-3.3-70b-instruct:free,qwen/qwen-2.5-72b-instruct:free
+```
+
+A cada geracao o sistema comeca pelo proximo modelo da lista (round-robin) e, se um modelo falhar ou bater o limite de taxa, cai automaticamente para o seguinte. Confira sempre a lista atual de modelos gratuitos em https://openrouter.ai/models?q=free — o catalogo muda com frequencia.

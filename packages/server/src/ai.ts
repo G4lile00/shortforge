@@ -21,12 +21,36 @@ Responda SEMPRE apenas com JSON valido, sem markdown, no formato:
   "outro": "frase de encerramento chamando para seguir a conta (max 12 palavras)"
 }`;
 
+// contador global para distribuir as geracoes entre os modelos da lista
+let modelCursor = 0;
+
 export async function generateScript(settings: Settings, themeName: string, brief: string, itemCount: number, extraHashtags: string[]): Promise<Script> {
   const userPrompt = `Crie o roteiro de um video "${themeName}" no formato top ${itemCount}.
 Contexto e estilo do canal: ${brief || 'conteudo interessante e curioso'}.
 Os "items" devem ser exatamente ${itemCount}, ordenados do ${itemCount}º para o 1º (contagem regressiva), com narracao fluida para narracao em voz.
 As hashtags devem incluir estas: ${extraHashtags.join(' ') || '(nenhuma fixa)'}`;
 
+  // ciclo de modelos: campo aceita lista separada por virgula (rotação entre modelos gratuitos)
+  const models = settings.llm.model.split(',').map((m) => m.trim()).filter(Boolean);
+  if (models.length === 0) throw new Error('Nenhum modelo LLM configurado');
+  modelCursor = (modelCursor + 1) % models.length;
+  const order = [...models.slice(modelCursor), ...models.slice(0, modelCursor)];
+
+  let lastErr: Error | null = null;
+  for (const model of order) {
+    try {
+      const script = await tryModel(settings, model, userPrompt);
+      log('info', 'llm', `roteiro gerado com ${model}`);
+      return script;
+    } catch (err) {
+      lastErr = err instanceof Error ? err : new Error(String(err));
+      log('warn', 'llm', `${model} falhou (${lastErr.message.slice(0, 150)}) - tentando proximo modelo`);
+    }
+  }
+  throw lastErr ?? new Error('LLM indisponivel');
+}
+
+async function tryModel(settings: Settings, model: string, userPrompt: string): Promise<Script> {
   const res = await fetch(`${settings.llm.baseUrl.replace(/\/$/, '')}/chat/completions`, {
     method: 'POST',
     headers: {
@@ -34,7 +58,7 @@ As hashtags devem incluir estas: ${extraHashtags.join(' ') || '(nenhuma fixa)'}`
       Authorization: `Bearer ${settings.llm.apiKey}`,
     },
     body: JSON.stringify({
-      model: settings.llm.model,
+      model,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: userPrompt },

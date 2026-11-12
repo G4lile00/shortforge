@@ -369,10 +369,10 @@ async function renderConfig(el) {
     <form id="configForm" class="grid lg:grid-cols-2 gap-6">
       <div class="rounded-2xl border border-forge-border bg-forge-panel p-6 space-y-3">
         <h2 class="font-bold">IA - Roteirista (LLM)</h2>
-        <p class="text-xs text-forge-muted -mt-2">Qualquer API compativel com OpenAI. Modelos gratuitos: OpenRouter (deepseek/deepseek-chat-v3.1:free), Groq (llama-3.3-70b-versatile). Modelo pago Z.ai: base https://api.z.ai/api/paas/v4 com GLM-4.6.</p>
+        <p class="text-xs text-forge-muted -mt-2">Qualquer API compativel com OpenAI. No OpenRouter use modelos gratuitos com sufixo ":free" (veja a lista atual em openrouter.ai/models?q=free) e separe varios por virgula - o sistema cicla entre eles a cada geracao e cai para o proximo automaticamente se um bater limite ou falhar. Modelo pago Z.ai: base https://api.z.ai/api/paas/v4 com glm-4.6.</p>
         ${field('Base URL', 'llm_baseUrl', SETTINGS.llm.baseUrl, 'https://openrouter.ai/api/v1')}
-        ${field('API Key', 'llm_apiKey', SETTINGS.llm.apiKey, 'sk-...')}
-        ${field('Modelo', 'llm_model', SETTINGS.llm.model, 'deepseek/deepseek-chat-v3.1:free')}
+        ${field('API Key', 'llm_apiKey', SETTINGS.llm.apiKey, 'sk-or-...')}
+        ${field('Modelos (virgula para ciclar)', 'llm_model', SETTINGS.llm.model, 'modelo-a:free,modelo-b:free,modelo-c:free')}
       </div>
 
       <div class="rounded-2xl border border-forge-border bg-forge-panel p-6 space-y-3">
