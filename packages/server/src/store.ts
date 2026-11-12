@@ -34,7 +34,7 @@ export const DEFAULT_SETTINGS: Settings = {
     model: 'deepseek/deepseek-chat-v3.1:free',
   },
   tts: {
-    provider: 'edge-tts',
+    provider: 'edge',
     baseUrl: 'https://api.openai.com/v1',
     apiKey: '',
     model: 'gpt-4o-mini-tts',

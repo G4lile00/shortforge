@@ -32,13 +32,12 @@ function respond(res: express.Response, fn: () => unknown) {
 // ---------- status ----------
 app.get('/api/status', (_req, res) => {
   respond(res, async () => {
-    let ffmpeg = false, edgeTts = false;
+    let ffmpeg = false;
     try { await execFileAsync('ffmpeg', ['-version']); ffmpeg = true; } catch { /* ausente */ }
-    try { await execFileAsync('edge-tts', ['--list-voices']); edgeTts = true; } catch { /* ausente */ }
     const settings = store.settings();
     return {
       ffmpeg,
-      edgeTts,
+      ttsBundled: true, // msedge-tts vem embutido no servidor (sem Python)
       worker: settings.worker,
       counts: {
         themes: store.themes().filter((t) => t.active).length,

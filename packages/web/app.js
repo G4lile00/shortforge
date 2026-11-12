@@ -57,7 +57,7 @@ async function renderPainel(el) {
   ];
   const deps = [
     ['FFmpeg', st.ffmpeg, 'necessario para renderizar os videos (instale: apt install ffmpeg)'],
-    ['edge-tts (naracao free)', st.edgeTts, 'narracao gratuita (instale: pip install edge-tts)'],
+    ['Narracao nativa (msedge-tts)', st.ttsBundled, 'vozes neurais pt-BR embutidas, sem Python e sem chave de API'],
     ['Worker automatico', st.worker.enabled, `intervalo de ${st.worker.intervalMin} min - meta: ${st.worker.dailyTarget} videos/dia`],
   ];
   el.innerHTML = `
@@ -377,8 +377,8 @@ async function renderConfig(el) {
 
       <div class="rounded-2xl border border-forge-border bg-forge-panel p-6 space-y-3">
         <h2 class="font-bold">IA - Narracao (TTS)</h2>
-        <p class="text-xs text-forge-muted -mt-2">edge-tts e gratuito (Microsoft Neural, vocezes pt-BR como pt-BR-AntonioNeural). Ou use TTS compativel com OpenAI (tts-1, voice: alloy/nova...).</p>
-        ${select('Provedor', 'tts_provider', SETTINGS.tts.provider, [['edge-tts', 'edge-tts (gratuito)'], ['openai', 'OpenAI-compativel (pago)']])}
+        <p class="text-xs text-forge-muted -mt-2">Padrao: narracao nativa (msedge-tts) com vozes neurais Microsoft em pt-BR, vem embutida no servidor - nao precisa instalar nada. Alternativas: CLI edge-tts em Python (pipx install edge-tts) ou TTS compativel com OpenAI (tts-1, voice: alloy/nova...).</p>
+        ${select('Provedor', 'tts_provider', SETTINGS.tts.provider, [['edge', 'Nativo (msedge-tts, sem Python)'], ['edge-tts', 'CLI edge-tts (Python)'], ['openai', 'OpenAI-compativel (pago)']])}
         <div id="ttsFields" class="space-y-3"></div>
       </div>
 

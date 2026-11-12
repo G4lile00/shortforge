@@ -70,7 +70,7 @@ export interface Settings {
     model: string;     // ex: deepseek/deepseek-chat-v3.1:free
   };
   tts: {
-    provider: 'edge-tts' | 'openai';
+    provider: 'edge' | 'edge-tts' | 'openai';
     baseUrl: string;   // openai-compativel: .../v1
     apiKey: string;
     model: string;     // ex: tts-1

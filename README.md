@@ -17,7 +17,7 @@ shortforge/
 
 - **Node.js >= 20** (ou Bun) e npm
 - **FFmpeg** no PATH: `sudo apt install ffmpeg`
-- **edge-tts** (narracao gratuita): `pip install edge-tts`
+- *(opcional)* CLI edge-tts em Python como alternativa de narracao: `pipx install edge-tts` (a narracao padrao, msedge-tts, ja vem embutida no servidor)
 - Uma **API key gratuita da Pixabay** (emitida na hora): https://pixabay.com/api/docs/ . Pexels (https://www.pexels.com/api/) e opcional como fallback
 - Uma API de LLM (gratuita ou paga):
   - **Gratuita**: OpenRouter (modelos `:free`, ex. `deepseek/deepseek-chat-v3.1:free`) ou Groq (`llama-3.3-70b-versatile`)

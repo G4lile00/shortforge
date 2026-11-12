@@ -86,9 +86,29 @@ async function tryModel(settings: Settings, model: string, userPrompt: string): 
 }
 
 export async function ttsToFile(settings: Settings, text: string, outFile: string): Promise<void> {
-  if (settings.tts.provider === 'edge-tts') {
+  if (settings.tts.provider === 'edge' || settings.tts.provider === 'edge-tts') {
+    if (settings.tts.provider === 'edge') {
+      // narracao nativa via msedge-tts (npm, sem Python)
+      const { MsEdgeTTS, OUTPUT_FORMAT } = await import('msedge-tts');
+      const tts = new MsEdgeTTS();
+      try {
+        await tts.setMetadata(settings.tts.voice, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
+        const tmpDir = outFile + '.d';
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+        fs.mkdirSync(tmpDir, { recursive: true });
+        await tts.toFile(tmpDir, text);
+        const generated = path.join(tmpDir, 'audio.mp3');
+        if (!fs.existsSync(generated)) throw new Error('msedge-tts nao gerou o audio');
+        fs.renameSync(generated, outFile);
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      } finally {
+        tts.close();
+      }
+      return;
+    }
+    // CLI edge-tts (Python) - mantido como alternativa
     await execFileAsync('edge-tts', ['--voice', settings.tts.voice, '--text', text, '--write-media', outFile], { timeout: 120000 });
-    if (!fs.existsSync(outFile)) throw new Error('edge-tts nao gerou o arquivo de audio (instale com: pip install edge-tts)');
+    if (!fs.existsSync(outFile)) throw new Error('edge-tts nao gerou o arquivo de audio (instale com: pipx install edge-tts)');
     return;
   }
   const res = await fetch(`${settings.tts.baseUrl.replace(/\/$/, '')}/audio/speech`, {
