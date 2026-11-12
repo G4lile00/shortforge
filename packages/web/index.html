@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!--BASE-->
+  <title>ShortForge - Piloto automatico de Shorts</title>
+  <meta name="description" content="Piloto autonomo de conteudo para Shorts e TikTok: roteiro IA, narracao, banco de imagens licenciado e postagem automatica." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            forge: { bg: '#0d1117', panel: '#161b22', border: '#2d333b', accent: '#e3b341', accent2: '#3fb950', danger: '#f85149', muted: '#8b949e' },
+          },
+          fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+        },
+      },
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: #2d333b; border-radius: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    .tabbtn.active { color: #e3b341; border-color: #e3b341; }
+    .fadein { animation: fadein .25s ease; }
+    @keyframes fadein { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+    video { background: #000; }
+  </style>
+</head>
+<body class="bg-forge-bg text-zinc-200 font-sans min-h-screen">
+  <!-- Header -->
+  <header class="sticky top-0 z-30 border-b border-forge-border bg-forge-bg/90 backdrop-blur">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="w-9 h-9 rounded-xl bg-forge-accent/15 border border-forge-accent/40 grid place-items-center text-forge-accent text-lg font-extrabold shrink-0">⚡</div>
+        <div class="min-w-0">
+          <h1 class="font-extrabold text-lg leading-tight truncate">Short<span class="text-forge-accent">Forge</span></h1>
+          <p class="text-[11px] text-forge-muted leading-tight hidden sm:block">piloto autonomo de Shorts & TikTok</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 text-xs">
+        <span id="statusWorker" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-forge-border bg-forge-panel text-forge-muted">Worker: --</span>
+        <button id="btnTick" class="px-3 py-2 rounded-lg bg-forge-panel border border-forge-border hover:border-forge-accent transition font-medium">Rodar agora</button>
+      </div>
+    </div>
+    <nav class="max-w-7xl mx-auto px-4 sm:px-6 flex gap-1 overflow-x-auto" aria-label="Navegacao principal">
+      <button data-tab="painel" class="tabbtn active px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-forge-muted hover:text-zinc-100 whitespace-nowrap transition">Painel</button>
+      <button data-tab="producao" class="tabbtn px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-forge-muted hover:text-zinc-100 whitespace-nowrap transition">Producao</button>
+      <button data-tab="videos" class="tabbtn px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-forge-muted hover:text-zinc-100 whitespace-nowrap transition">Videos</button>
+      <button data-tab="fila" class="tabbtn px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-forge-muted hover:text-zinc-100 whitespace-nowrap transition">Fila de postagem</button>
+      <button data-tab="config" class="tabbtn px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-forge-muted hover:text-zinc-100 whitespace-nowrap transition">Configuracoes</button>
+      <button data-tab="logs" class="tabbtn px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-forge-muted hover:text-zinc-100 whitespace-nowrap transition">Logs</button>
+    </nav>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-24">
+    <section id="tab-painel" class="tabpane fadein"></section>
+    <section id="tab-producao" class="tabpane fadein hidden"></section>
+    <section id="tab-videos" class="tabpane fadein hidden"></section>
+    <section id="tab-fila" class="tabpane fadein hidden"></section>
+    <section id="tab-config" class="tabpane fadein hidden"></section>
+    <section id="tab-logs" class="tabpane fadein hidden"></section>
+  </main>
+
+  <!-- Toasts -->
+  <div id="toasts" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 items-end"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

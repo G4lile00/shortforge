@@ -1,0 +1,15 @@
+{
+  "name": "shortforge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Piloto autonomo de conteudo para Shorts/TikTok: roteiro IA + TTS + banco de imagens licenciado + render FFmpeg + postagem automatica",
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "dev": "npm run dev -w @shortforge/server",
+    "start": "npm run start -w @shortforge/server",
+    "setup": "npm install"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

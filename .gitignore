@@ -1,0 +1,7 @@
+node_modules/
+dist/
+media/
+data/*.json
+!data/settings.example.json
+*.log
+.DS_Store
