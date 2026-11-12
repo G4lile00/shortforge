@@ -76,6 +76,13 @@ export interface Settings {
     model: string;     // ex: tts-1
     voice: string;     // ex: pt-BR-AntonioNeural (edge) ou alloy (openai)
   };
+  media: {
+    mode: 'ai' | 'stock';          // origem do visual: IA generativa ou banco licenciado
+    aiProvider: 'pollinations' | 'zai';
+    aiModel: string;               // flux / turbo (pollinations) ou cogview-3-flash (z.ai)
+    aiStyle: string;               // estilo visual (em ingles) anexado ao prompt
+    zaiKey: string;                // API key da Z.ai (so para provider 'zai')
+  };
   stock: { provider: 'pixabay' | 'pexels' };
   pixabay: { apiKey: string };
   pexels: { apiKey: string };
@@ -93,7 +100,6 @@ export interface Settings {
     enabled: boolean;
     intervalMin: number;
     dailyTarget: number;      // videos gerados por dia no piloto automatico
-    scheduleHours: string;    // "09:00,12:00,18:00" horarios de postagem
   };
 }
 

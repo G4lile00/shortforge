@@ -33,17 +33,28 @@ const STATUS = {
   rendering: ['Renderizando', 'bg-purple-500/15 text-purple-300 border-purple-500/40'],
   rendered: ['Pronto', 'bg-green-500/15 text-green-400 border-green-500/40'],
   failed: ['Falhou', 'bg-red-500/15 text-red-400 border-red-500/40'],
-  scheduled: ['Agendado', 'bg-blue-500/15 text-sky-400 border-sky-500/40'],
-  publishing: ['Publicando', 'bg-purple-500/15 text-purple-300 border-purple-500/40'],
-  posted: ['Publicado', 'bg-green-500/15 text-green-400 border-green-500/40'],
 };
 const badge = (s) => {
   const [label, cls] = STATUS[s] || [s, 'bg-forge-panel text-forge-muted border-forge-border'];
   return `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border ${cls}">${label}</span>`;
 };
-const platBadge = (p) => p === 'youtube'
-  ? '<span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-red-500/15 text-red-400 border border-red-500/40">YouTube</span>'
-  : '<span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-zinc-500/15 text-zinc-300 border border-zinc-500/40">TikTok</span>';
+
+function copyText(txt, label = 'Copiado!') {
+  const fallback = () => {
+    const ta = document.createElement('textarea');
+    ta.value = txt;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); toast(label, 'success'); }
+    catch { toast('Nao consegui copiar - selecione o campo manualmente', 'error'); }
+    ta.remove();
+  };
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(txt).then(() => toast(label, 'success')).catch(fallback);
+  } else fallback();
+}
 
 /* ============ PAINEL ============ */
 async function renderPainel(el) {
@@ -51,9 +62,9 @@ async function renderPainel(el) {
   const [st, logs] = await Promise.all([api('api/status'), api('api/logs')]);
   const cards = [
     { label: 'Temas ativos', value: st.counts.themes, icon: '🎯' },
-    { label: 'Videos produzidos', value: `${st.counts.rendered}/${st.counts.videos}`, icon: '🎬' },
-    { label: 'Na fila', value: st.counts.scheduled, icon: '📤' },
-    { label: 'Publicados', value: st.counts.posted, icon: '🚀' },
+    { label: 'Em producao', value: st.counts.producing ?? 0, icon: '⏳' },
+    { label: 'Prontos para revisao', value: st.counts.rendered, icon: '📥' },
+    { label: 'Videos no total', value: st.counts.videos, icon: '🎬' },
   ];
   const deps = [
     ['FFmpeg', st.ffmpeg, 'necessario para renderizar os videos (instale: apt install ffmpeg)'],
@@ -81,8 +92,9 @@ async function renderPainel(el) {
               <span class="text-forge-muted text-xs block">${esc(hint)}</span></div>
             </li>`).join('')}
         </ul>
-        <div class="mt-4 flex gap-2">
+        <div class="mt-4 flex flex-wrap gap-2">
           <button data-goto="producao" class="px-4 py-2 rounded-lg bg-forge-accent text-black font-bold text-sm hover:brightness-110 transition">+ Produzir video</button>
+          <button data-goto="baixar" class="px-4 py-2 rounded-lg border border-forge-accent/50 text-forge-accent font-bold text-sm hover:bg-forge-accent/10 transition">Baixar & Publicar</button>
           <button data-goto="config" class="px-4 py-2 rounded-lg border border-forge-border font-semibold text-sm hover:border-forge-accent transition">Configurar APIs</button>
         </div>
       </div>
@@ -153,7 +165,7 @@ async function renderProducao(el) {
             </div>` : '<p class="text-sm text-forge-muted">Nenhum tema ainda. Crie o primeiro ao lado para comecar.</p>'}
         </div>
         <div class="rounded-2xl border border-forge-border bg-forge-panel p-6 text-sm text-forge-muted leading-relaxed">
-          <span class="font-semibold text-zinc-300">Como funciona o piloto:</span> para cada video, o sistema gera o roteiro com a IA configurada, narra cada parte com TTS, busca clipes e fotos licenciados no Pexels conforme o assunto de cada item, monta o video vertical 1080x1920 no FFmpeg com legendas queimadas e deixa pronto para agendar no YouTube e TikTok.
+          <span class="font-semibold text-zinc-300">Como funciona o piloto:</span> para cada video, o sistema gera o roteiro com a IA configurada, narra cada parte com TTS, cria o visual (imagens geradas por IA ou banco licenciado), monta o video vertical 1080x1920 no FFmpeg com legendas queimadas e deixa tudo pronto na aba Baixar & Publicar para voce revisar, baixar e postar onde quiser.
         </div>
       </div>
     </div>`;
@@ -228,7 +240,8 @@ async function renderVideos(el) {
               <div class="mt-2 max-h-40 overflow-y-auto space-y-1.5 pr-1" data-script="${v.id}">carregando...</div>
             </details>
             <div class="mt-auto pt-2 flex flex-wrap gap-2">
-              <button data-sched="${v.id}" class="flex-1 px-3 py-2 rounded-lg bg-forge-accent text-black font-bold text-xs hover:brightness-110 transition" ${v.status !== 'rendered' ? 'disabled title="aguardando render"' : ''}>Agendar</button>
+              <a href="api/videos/${v.id}/download" class="flex-1 px-3 py-2 rounded-lg bg-forge-accent text-black font-bold text-xs hover:brightness-110 transition text-center ${v.status !== 'rendered' ? 'pointer-events-none opacity-40' : ''}">Baixar</a>
+              <button data-goto="baixar" class="px-3 py-2 rounded-lg border border-forge-accent/50 text-forge-accent text-xs font-bold hover:bg-forge-accent/10 transition" ${v.status !== 'rendered' ? 'disabled title="aguardando render"' : ''}>Revisar</button>
               <button data-render="${v.id}" class="px-3 py-2 rounded-lg border border-forge-border text-xs hover:border-forge-accent transition" title="Re-renderizar">Re-render</button>
               <button data-del-video="${v.id}" class="px-3 py-2 rounded-lg border border-red-500/40 text-red-400 text-xs hover:bg-red-500/10 transition">Excluir</button>
             </div>
@@ -260,89 +273,68 @@ async function renderVideos(el) {
     try { await api(`api/videos/${b.dataset.delVideo}`, { method: 'DELETE' }); renderVideos(el); }
     catch (err) { toast(err.message, 'error'); }
   }));
-
-  $$('[data-sched]', el).forEach((b) => b.addEventListener('click', () => openScheduleDialog(b.dataset.sched)));
 }
 
-function openScheduleDialog(videoId) {
-  const dlg = document.createElement('div');
-  dlg.className = 'fixed inset-0 z-40 grid place-items-center bg-black/70 p-4';
-  dlg.innerHTML = `
-    <div class="fadein w-full max-w-md rounded-2xl border border-forge-border bg-forge-panel p-6">
-      <h3 class="font-bold mb-1">Agendar postagem</h3>
-      <p class="text-xs text-forge-muted mb-4">O worker publica automaticamente na data/hora. Voce tambem pode publicar manualmente na aba Fila.</p>
-      <div class="space-y-3 text-sm">
-        <div>
-          <label class="block text-xs font-semibold mb-1">Plataforma</label>
-          <select id="dlgPlatform" class="w-full px-3 py-2 rounded-lg bg-forge-bg border border-forge-border outline-none">
-            <option value="youtube">YouTube Shorts</option>
-            <option value="tiktok">TikTok</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-xs font-semibold mb-1">Data e hora</label>
-          <input id="dlgWhen" type="datetime-local" class="w-full px-3 py-2 rounded-lg bg-forge-bg border border-forge-border outline-none" />
-        </div>
-        <div class="flex gap-2 pt-2">
-          <button id="dlgCancel" class="flex-1 py-2 rounded-lg border border-forge-border font-semibold">Cancelar</button>
-          <button id="dlgOk" class="flex-1 py-2 rounded-lg bg-forge-accent text-black font-bold hover:brightness-110 transition">Agendar</button>
-        </div>
-      </div>
-    </div>`;
-  document.body.appendChild(dlg);
-  $('#dlgCancel', dlg).onclick = () => dlg.remove();
-  dlg.onclick = (e) => { if (e.target === dlg) dlg.remove(); };
-  $('#dlgOk', dlg).onclick = async () => {
-    try {
-      await api('api/posts', { method: 'POST', body: {
-        videoId,
-        platform: $('#dlgPlatform', dlg).value,
-        scheduledAt: $('#dlgWhen', dlg).value ? new Date($('#dlgWhen', dlg).value).toISOString() : new Date().toISOString(),
-      } });
-      toast('Postagem agendada!', 'success');
-      dlg.remove();
-      switchTab('fila');
-    } catch (err) { toast(err.message, 'error'); }
-  };
-}
-
-/* ============ FILA ============ */
-async function renderFila(el) {
+/* ============ BAIXAR & PUBLICAR ============ */
+const PAYLOAD = {};
+async function renderBaixar(el) {
   el.innerHTML = '<div class="text-forge-muted text-sm">Carregando...</div>';
-  const posts = await api('api/posts');
-  el.innerHTML = `
-    <div class="rounded-2xl border border-forge-border bg-forge-panel overflow-hidden">
-      <div class="p-6 pb-4"><h2 class="font-bold">Fila de postagem <span class="text-forge-muted text-sm font-normal">(${posts.length})</span></h2></div>
-      ${posts.length ? `<div class="overflow-x-auto"><table class="w-full text-sm">
-        <thead><tr class="text-left text-xs text-forge-muted border-y border-forge-border">
-          <th class="px-6 py-3 font-semibold">Video</th>
-          <th class="px-4 py-3 font-semibold">Plataforma</th>
-          <th class="px-4 py-3 font-semibold">Quando</th>
-          <th class="px-4 py-3 font-semibold">Status</th>
-          <th class="px-4 py-3 font-semibold text-right">Acoes</th>
-        </tr></thead>
-        <tbody>${posts.map((p) => `
-          <tr class="border-b border-forge-border/60 hover:bg-forge-bg/60">
-            <td class="px-6 py-3 max-w-56"><div class="truncate font-medium">${esc(p.videoTitle)}</div></td>
-            <td class="px-4 py-3">${platBadge(p.platform)}</td>
-            <td class="px-4 py-3 text-forge-muted whitespace-nowrap">${fmtDate(p.scheduledAt)}</td>
-            <td class="px-4 py-3">${badge(p.status)}${p.error ? `<div class="text-[11px] text-red-400 mt-1 max-w-64">${esc(p.error)}</div>` : ''}${p.remoteUrl ? `<a href="${p.remoteUrl}" target="_blank" rel="noopener" class="text-[11px] text-forge-accent underline mt-1 block">ver publicacao</a>` : ''}</td>
-            <td class="px-4 py-3 text-right whitespace-nowrap">
-              ${p.status === 'posted' ? '' : `<button data-pub="${p.id}" class="px-3 py-1.5 rounded-lg bg-forge-accent text-black font-bold text-xs hover:brightness-110 transition">Publicar agora</button>
-              <button data-del-post="${p.id}" class="px-3 py-1.5 rounded-lg border border-forge-border text-xs hover:border-red-500 transition ml-1">Cancelar</button>`}
-            </td>
-          </tr>`).join('')}</tbody>
-      </table></div>` : '<p class="px-6 pb-6 text-sm text-forge-muted">Fila vazia. Agende um video renderizado na aba Videos.</p>'}
+  const videos = (await api('api/videos')).filter((v) => v.status === 'rendered');
+
+  const metaRow = (label, value, what, vid, rows = 0) => `
+    <div>
+      <div class="flex items-center justify-between mb-1">
+        <label class="text-xs font-semibold text-forge-muted">${label}</label>
+        <button data-copy="${what}" data-v="${vid}" class="text-[11px] px-2 py-1 rounded border border-forge-border hover:border-forge-accent transition">Copiar</button>
+      </div>
+      ${rows
+        ? `<textarea readonly rows="${rows}" class="w-full px-3 py-2 rounded-lg bg-forge-bg border border-forge-border text-xs resize-none">${esc(value)}</textarea>`
+        : `<input readonly value="${esc(value)}" class="w-full px-3 py-2 rounded-lg bg-forge-bg border border-forge-border text-xs" />`}
     </div>`;
 
-  $$('[data-pub]', el).forEach((b) => b.addEventListener('click', async () => {
-    b.disabled = true; b.textContent = 'Enviando...';
-    try { await api(`api/posts/${b.dataset.pub}/publish`, { method: 'POST' }); toast('Publicado com sucesso!', 'success'); renderFila(el); }
-    catch (err) { toast(err.message, 'error'); renderFila(el); }
-  }));
-  $$('[data-del-post]', el).forEach((b) => b.addEventListener('click', async () => {
-    try { await api(`api/posts/${b.dataset.delPost}`, { method: 'DELETE' }); renderFila(el); }
-    catch (err) { toast(err.message, 'error'); }
+  el.innerHTML = `
+    <div class="rounded-2xl border border-forge-border bg-forge-panel p-5 mb-5 text-sm text-forge-muted leading-relaxed">
+      <span class="font-semibold text-zinc-300">Fluxo de revisao:</span> confira o video, baixe o MP4 e publique manualmente onde quiser (TikTok, Kwai, Instagram, Facebook, YouTube) ou cole no seu agendador (Postiz, Publer, Buffer...). Titulo, descricao e hashtags ja vao montados - use os botoes "Copiar".
+    </div>
+    ${videos.length ? videos.map((v) => {
+      const tags = (v.hashtags || []).join(' ');
+      const caption = [String(v.description || '').trim(), tags].filter(Boolean).join('\n\n');
+      const full = `${v.title || ''}${caption ? `\n\n${caption}` : ''}`;
+      PAYLOAD[v.id] = { title: v.title || '', caption, full };
+      return `
+      <article class="rounded-2xl border border-forge-border bg-forge-panel p-5 mb-5 grid lg:grid-cols-[230px_1fr] gap-6">
+        <div>
+          <video src="media/${v.id}/final.mp4" controls preload="metadata" poster="media/${v.id}/thumb.jpg" class="w-full rounded-xl max-h-80 bg-black"></video>
+          <a href="api/videos/${v.id}/download" class="mt-3 block text-center px-3 py-2.5 rounded-xl bg-forge-accent text-black font-extrabold hover:brightness-110 transition">Baixar MP4</a>
+          <p class="text-[11px] text-forge-muted mt-2 text-center">1080x1920, legendas queimadas, pronto para subir</p>
+        </div>
+        <div class="space-y-3">
+          <div class="flex items-start justify-between gap-3">
+            <h3 class="font-bold leading-snug">${esc(v.title)}</h3>
+            <span class="text-xs text-forge-muted whitespace-nowrap">${v.durationSec ? v.durationSec.toFixed(0) + 's' : '--'}</span>
+          </div>
+          ${metaRow('TITULO (YouTube)', v.title || '', 'title', v.id)}
+          ${metaRow('DESCRICAO', v.description || '', 'caption', v.id, 3)}
+          ${metaRow('HASHTAGS', tags, 'caption', v.id)}
+          <div class="flex flex-wrap gap-2 pt-1">
+            <button data-copy="caption" data-v="${v.id}" class="px-4 py-2 rounded-lg bg-forge-accent/15 border border-forge-accent/40 text-forge-accent text-xs font-bold hover:bg-forge-accent/25 transition">Copiar legenda (TikTok / Kwai / Reels)</button>
+            <button data-copy="full" data-v="${v.id}" class="px-4 py-2 rounded-lg border border-forge-border text-xs font-semibold hover:border-forge-accent transition">Copiar pacote completo</button>
+          </div>
+        </div>
+      </article>`;
+    }).join('') : `
+    <div class="rounded-2xl border border-forge-border bg-forge-panel p-10 text-center">
+      <p class="text-4xl mb-3">📥</p>
+      <p class="font-semibold">Nenhum video pronto para revisao</p>
+      <p class="text-sm text-forge-muted mt-1">Produza um video na aba Producao - quando o render terminar, ele aparece aqui com tudo montado.</p>
+    </div>`}`;
+
+  $$('[data-copy]', el).forEach((b) => b.addEventListener('click', () => {
+    const p = PAYLOAD[b.dataset.v];
+    if (!p) return;
+    if (b.dataset.copy === 'title') copyText(p.title, 'Titulo copiado!');
+    else if (b.dataset.copy === 'full') copyText(p.full, 'Pacote completo copiado!');
+    else copyText(p.caption, 'Legenda copiada!');
   }));
 }
 
@@ -383,37 +375,30 @@ async function renderConfig(el) {
       </div>
 
       <div class="rounded-2xl border border-forge-border bg-forge-panel p-6 space-y-3">
-        <h2 class="font-bold">Banco de midia licenciada</h2>
-        <p class="text-xs text-forge-muted -mt-2">Pixabay: chave gratuita emitida na hora em pixabay.com/api/docs/ (apos criar a conta, a key aparece no topo da pagina). Licenca Pixabay permite uso comercial sem atribuicao. Pexels: opcional, usado como fallback se configurado (cadastro de novas chaves atualmente pausado).</p>
-        ${select('Provedor principal', 'stock_provider', SETTINGS.stock?.provider || 'pixabay', [['pixabay', 'Pixabay (recomendado)'], ['pexels', 'Pexels']])}
-        ${field('Pixabay API Key', 'pixabay_apiKey', SETTINGS.pixabay?.apiKey || '', 'sua chave gratuita')}
-        ${field('Pexels API Key (fallback, opcional)', 'pexels_apiKey', SETTINGS.pexels.apiKey, 'opcional')}
-      </div>
-
-      <div class="rounded-2xl border border-forge-border bg-forge-panel p-6 space-y-3">
-        <h2 class="font-bold">YouTube (Data API v3)</h2>
-        <p class="text-xs text-forge-muted -mt-2">No Google Cloud Console: crie projeto, ative a YouTube Data API v3, gere OAuth Client ID/Secret e um Refresh Token com escopo youtube.upload (use o OAuth Playground do Google).</p>
-        ${field('Client ID', 'youtube_clientId', SETTINGS.youtube.clientId, 'xxxx.apps.googleusercontent.com')}
-        ${field('Client Secret', 'youtube_clientSecret', SETTINGS.youtube.clientSecret, '')}
-        ${field('Refresh Token', 'youtube_refreshToken', SETTINGS.youtube.refreshToken, '')}
-        ${select('Privacidade padrao', 'youtube_privacy', SETTINGS.youtube.privacy, [['public', 'Publico'], ['unlisted', 'Nao listado'], ['private', 'Privado']])}
-      </div>
-
-      <div class="rounded-2xl border border-forge-border bg-forge-panel p-6 space-y-3">
-        <h2 class="font-bold">TikTok (Content Posting API)</h2>
-        <p class="text-xs text-forge-muted -mt-2">Em developers.tiktok.com crie um app e autorize o escopo video.publish para obter o Access Token. Apps nao auditados postam apenas como privado (SELF_ONLY) - apos a auditoria do TikTok, publique como PUBLIC_TO_EVERYONE.</p>
-        ${field('Access Token', 'tiktok_accessToken', SETTINGS.tiktok.accessToken, '')}
-        ${select('Privacidade', 'tiktok_privacy', SETTINGS.tiktok.privacy, [['PUBLIC_TO_EVERYONE', 'Publico'], ['MUTUAL_FOLLOW_FRIENDS', 'Amigos'], ['SELF_ONLY', 'Privado (auto)']])}
+        <h2 class="font-bold">Midia do video (visual)</h2>
+        <p class="text-xs text-forge-muted -mt-2">Modo IA (padrao): gera uma imagem exclusiva por parte do video - Pollinations e gratuito e nao precisa de chave. Se a IA falhar, cai automaticamente no banco licenciado (e, se este falhar, em um fundo estilizado). Modo banco: usa apenas Pixabay/Pexels. Z.ai CogView: cogview-3-flash e gratuito com uma API key Z.ai (mesma base do GLM).</p>
+        ${select('Modo visual', 'media_mode', SETTINGS.media?.mode || 'ai', [['ai', 'IA generativa (recomendado)'], ['stock', 'Banco licenciado (Pixabay/Pexels)']])}
+        ${select('Provedor de IA', 'media_aiProvider', SETTINGS.media?.aiProvider || 'pollinations', [['pollinations', 'Pollinations (gratuito, sem chave)'], ['zai', 'Z.ai CogView (precisa de API key)']])}
+        <div class="grid grid-cols-2 gap-3">
+          ${field('Modelo IA', 'media_aiModel', SETTINGS.media?.aiModel || '', 'vazio = automatico; cogview-3-flash (z.ai)')}
+          ${field('Z.ai API Key', 'media_zaiKey', SETTINGS.media?.zaiKey || '', 'so para o provedor zai')}
+        </div>
+        ${field('Estilo visual (em ingles)', 'media_aiStyle', SETTINGS.media?.aiStyle || '', 'cinematic vertical photo, dramatic lighting, high detail')}
+        <div class="pt-2 border-t border-forge-border space-y-3">
+          <p class="text-xs font-semibold text-forge-muted">Banco licenciado (fallback do modo IA ou modo principal)</p>
+          ${select('Provedor principal', 'stock_provider', SETTINGS.stock?.provider || 'pixabay', [['pixabay', 'Pixabay (recomendado)'], ['pexels', 'Pexels']])}
+          ${field('Pixabay API Key', 'pixabay_apiKey', SETTINGS.pixabay?.apiKey || '', 'sua chave gratuita')}
+          ${field('Pexels API Key (fallback, opcional)', 'pexels_apiKey', SETTINGS.pexels.apiKey, 'opcional')}
+        </div>
       </div>
 
       <div class="rounded-2xl border border-forge-border bg-forge-panel p-6 space-y-3">
         <h2 class="font-bold">Piloto automatico</h2>
-        <p class="text-xs text-forge-muted -mt-2">O worker roda no servidor em intervalos fixos: gera videos conforme a meta diaria e agenda postagens nos horarios definidos.</p>
+        <p class="text-xs text-forge-muted -mt-2">O worker roda no servidor em intervalos fixos e gera videos conforme a meta diaria - cada video pronto aparece na aba Baixar & Publicar para voce revisar. A publicacao e sempre manual (voce no controle).</p>
         <div class="grid grid-cols-2 gap-3">
           ${select('Status', 'worker_enabled', String(SETTINGS.worker.enabled), [['true', 'Ligado'], ['false', 'Desligado']])}
           ${field('Intervalo (min)', 'worker_intervalMin', SETTINGS.worker.intervalMin)}
           ${field('Meta de videos/dia', 'worker_dailyTarget', SETTINGS.worker.dailyTarget)}
-          ${field('Horarios de postagem', 'worker_scheduleHours', SETTINGS.worker.scheduleHours, '09:00,12:00,18:00')}
         </div>
       </div>
 
@@ -446,9 +431,8 @@ async function renderConfig(el) {
         pexels: { apiKey: v('pexels_apiKey') },
         pixabay: { apiKey: v('pixabay_apiKey') },
         stock: { provider: v('stock_provider') },
-        youtube: { clientId: v('youtube_clientId'), clientSecret: v('youtube_clientSecret'), refreshToken: v('youtube_refreshToken'), privacy: v('youtube_privacy') },
-        tiktok: { accessToken: v('tiktok_accessToken'), privacy: v('tiktok_privacy') },
-        worker: { enabled: v('worker_enabled') === 'true', intervalMin: num('worker_intervalMin', 5), dailyTarget: num('worker_dailyTarget', 3), scheduleHours: v('worker_scheduleHours') },
+        media: { mode: v('media_mode'), aiProvider: v('media_aiProvider'), aiModel: v('media_aiModel'), aiStyle: v('media_aiStyle'), zaiKey: v('media_zaiKey') },
+        worker: { enabled: v('worker_enabled') === 'true', intervalMin: num('worker_intervalMin', 5), dailyTarget: num('worker_dailyTarget', 3) },
       } });
       toast('Configuracoes salvas!', 'success');
       renderConfig(el);
@@ -471,7 +455,7 @@ async function renderLogs(el) {
 }
 
 /* ============ router ============ */
-const RENDERERS = { painel: renderPainel, producao: renderProducao, videos: renderVideos, fila: renderFila, config: renderConfig, logs: renderLogs };
+const RENDERERS = { painel: renderPainel, producao: renderProducao, videos: renderVideos, baixar: renderBaixar, config: renderConfig, logs: renderLogs };
 
 function updateWorkerChip(st) {
   const chip = $('#statusWorker');
@@ -501,7 +485,7 @@ $('#btnTick').addEventListener('click', async () => {
 // polling leve nas abas dinamicas
 setInterval(() => {
   const active = $$('.tabbtn').find((b) => b.classList.contains('active'));
-  if (active && ['painel', 'videos', 'fila'].includes(active.dataset.tab)) switchTab(active.dataset.tab);
+  if (active && ['painel', 'videos', 'baixar'].includes(active.dataset.tab)) switchTab(active.dataset.tab);
 }, 30000);
 
 switchTab('painel');

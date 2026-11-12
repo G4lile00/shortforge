@@ -16,7 +16,7 @@ Responda SEMPRE apenas com JSON valido, sem markdown, no formato:
   "hashtags": ["#tag1", "#tag2", ...5 a 8 tags],
   "hook": "frase de abertura curta (max 15 palavras) que prende a atencao",
   "items": [
-    { "name": "nome do item", "narration": "1 a 2 frases curiosas sobre o item", "query": "termos em ingles para buscar video de banco de imagens sobre o item (ex: fishing lure closeup)" }
+    { "name": "nome do item", "narration": "1 a 2 frases curiosas sobre o item", "query": "descritor visual curto em INGLES do item, usado para buscar midia licenciada e/ou gerar imagem por IA (ex: glowing fishing lure underwater at night)" }
   ],
   "outro": "frase de encerramento chamando para seguir a conta (max 12 palavras)"
 }`;

@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { runFfmpeg, buildAss, ttsToFile, probeDuration } from './ai.js';
 import { fetchStockMedia } from './pexels.js';
+import { fetchAiMedia } from './aiimages.js';
 import { mediaDir, log } from './store.js';
 import type { Settings, Video } from './types.js';
 
@@ -41,7 +42,13 @@ export async function renderVideo(settings: Settings, video: Video): Promise<Vid
   for (const [i, part] of parts.entries()) {
     const dur = durations[i] + 0.15;
     const segFile = path.join(dir, `seg-${i}.mp4`);
-    const clips = await fetchStockMedia(settings, part.queries[0], dir, CLIPS_PER_ITEM);
+    // visual: IA generativa (padrao) com fallback automatico para o banco licenciado
+    let clips: string[] = [];
+    if ((settings.media?.mode ?? 'ai') === 'ai') {
+      clips = await fetchAiMedia(settings, part.queries[0], dir, 1);
+      if (clips.length === 0) log('warn', 'render', `IA nao gerou imagem para "${part.queries[0]}" - usando banco licenciado`);
+    }
+    if (clips.length === 0) clips = await fetchStockMedia(settings, part.queries[0], dir, CLIPS_PER_ITEM);
     const filterClips: string[] = [];
     const inputs: string[] = [];
     const usable: string[] = [];
@@ -52,11 +59,13 @@ export async function renderVideo(settings: Settings, video: Video): Promise<Vid
       if (isPhoto) {
         // foto com efeito ken burns (zoom lento)
         filterClips.push(
-          `[${idx}:v]scale=1080:1920:-1,zoompan=z='min(zoom+0.0012,1.25)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=${Math.ceil(dur * FPS)}:s=1080x1920:fps=${FPS},setsar=1[v${idx}]`
+          `[${idx}:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,zoompan=z='min(zoom+0.0012,1.25)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=${Math.ceil(dur * FPS)}:s=1080x1920:fps=${FPS},setsar=1[v${idx}]`
         );
       } else {
+        // force_original_aspect_ratio=increase + crop: nunca falha, mesmo com clipes
+        // quadrados/verticais que ficariam menores que 1080 de largura apos escalar
         filterClips.push(
-          `[${idx}:v]scale=-2:1920,crop=1080:1920,fps=${FPS},setsar=1[v${idx}]`
+          `[${idx}:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=${FPS},setsar=1[v${idx}]`
         );
       }
       inputs.push('-i', clip);

@@ -1,7 +1,6 @@
 import { store, log, uid } from './store.js';
 import { generateScript } from './ai.js';
 import { renderVideo } from './render.js';
-import { publishNow, checkPublishConfig } from './publish.js';
 import type { Theme, Video } from './types.js';
 
 /** Gera roteiro + render de 1 video a partir de um tema. */
@@ -58,36 +57,7 @@ function save(v: Video) {
   store.saveVideos(videos);
 }
 
-/** Processa postagens agendadas vencidas. */
-async function processDuePosts(): Promise<void> {
-  const settings = store.settings();
-  const now = Date.now();
-  const posts = store.posts();
-  const due = posts.filter((p) => p.status === 'scheduled' && new Date(p.scheduledAt).getTime() <= now);
-  for (const post of due) {
-    post.status = 'publishing';
-    store.savePosts(posts);
-    const video = store.videos().find((v) => v.id === post.videoId);
-    try {
-      if (!video || video.status !== 'rendered') throw new Error('video ainda nao renderizado');
-      const cfgErr = checkPublishConfig(settings, post.platform);
-      if (cfgErr) throw new Error(cfgErr);
-      const res = await publishNow(settings, video, post);
-      post.status = 'posted';
-      post.remoteId = res.remoteId;
-      post.remoteUrl = res.remoteUrl;
-      post.postedAt = new Date().toISOString();
-      log('success', 'publish', `${post.platform}: ${video.title} publicado`);
-    } catch (err) {
-      post.status = 'failed';
-      post.error = err instanceof Error ? err.message : String(err);
-      log('error', 'publish', `${post.platform}: ${post.error}`);
-    }
-    store.savePosts(posts);
-  }
-}
-
-/** Piloto automatico: gera videos conforme dailyTarget e agenda postagens nos horarios. */
+/** Piloto automatico: gera videos conforme dailyTarget; publicacao e sempre manual (aba Baixar & Publicar). */
 async function autoPilot(): Promise<void> {
   const settings = store.settings();
   if (!settings.worker.enabled || settings.worker.dailyTarget <= 0) return;
@@ -106,34 +76,7 @@ async function autoPilot(): Promise<void> {
   const theme = themes[producedToday % themes.length];
   try {
     const video = await produceVideo(theme);
-    // agenda postagens nos proximos horarios configurados
-    const now = new Date();
-    const hours = settings.worker.scheduleHours.split(',').map((h) => h.trim()).filter(Boolean);
-    for (const platform of ['youtube', 'tiktok'] as const) {
-      const posts = store.posts();
-      let when: Date | null = null;
-      for (const h of hours) {
-        const [hh, mm] = h.split(':').map(Number);
-        const candidate = new Date(now);
-        candidate.setHours(hh, mm, 0, 0);
-        if (candidate.getTime() > now.getTime() + 60 * 1000) { when = candidate; break; }
-      }
-      if (!when) when = new Date(now.getTime() + 3600 * 1000);
-      posts.push({
-        id: uid(),
-        videoId: video.id,
-        platform,
-        scheduledAt: when.toISOString(),
-        status: 'scheduled',
-        remoteId: null,
-        remoteUrl: null,
-        error: null,
-        createdAt: new Date().toISOString(),
-        postedAt: null,
-      });
-      store.savePosts(posts);
-      log('info', 'worker', `${platform} agendado para ${when.toLocaleString('pt-BR')}`);
-    }
+    log('success', 'worker', `"${video.title}" pronto para revisao na aba Baixar & Publicar`);
   } catch {
     /* erro ja registrado */
   }
@@ -145,7 +88,6 @@ export async function workerTick(): Promise<{ processed: number }> {
   running = true;
   let processed = 0;
   try {
-    await processDuePosts();
     await autoPilot();
   } finally {
     running = false;

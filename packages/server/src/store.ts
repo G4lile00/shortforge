@@ -40,6 +40,13 @@ export const DEFAULT_SETTINGS: Settings = {
     model: 'gpt-4o-mini-tts',
     voice: 'pt-BR-AntonioNeural',
   },
+  media: {
+    mode: 'ai',
+    aiProvider: 'pollinations',
+    aiModel: '',
+    aiStyle: 'cinematic vertical composition, dramatic lighting, rich colors, high detail, photorealistic, dark moody atmosphere',
+    zaiKey: '',
+  },
   stock: { provider: 'pixabay' },
   pixabay: { apiKey: '' },
   pexels: { apiKey: '' },
@@ -49,7 +56,6 @@ export const DEFAULT_SETTINGS: Settings = {
     enabled: true,
     intervalMin: 5,
     dailyTarget: 3,
-    scheduleHours: '09:00,12:00,18:00',
   },
 };
 

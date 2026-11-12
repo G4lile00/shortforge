@@ -5,10 +5,9 @@ import path from 'path';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { store, DEFAULT_SETTINGS, log, uid, MEDIA_DIR, WEB_DIR } from './store.js';
-import type { Settings, Theme, Post, Video } from './types.js';
+import type { Settings, Theme, Video } from './types.js';
 import { workerTick, produceVideo } from './worker.js';
 import { renderVideo } from './render.js';
-import { publishNow, checkPublishConfig } from './publish.js';
 
 const execFileAsync = promisify(execFile);
 const app = express();
@@ -43,8 +42,7 @@ app.get('/api/status', (_req, res) => {
         themes: store.themes().filter((t) => t.active).length,
         videos: store.videos().length,
         rendered: store.videos().filter((v) => v.status === 'rendered').length,
-        scheduled: store.posts().filter((p) => p.status === 'scheduled').length,
-        posted: store.posts().filter((p) => p.status === 'posted').length,
+        producing: store.videos().filter((v) => v.status === 'queued' || v.status === 'scripted' || v.status === 'rendering').length,
       },
     };
   });
@@ -60,6 +58,10 @@ app.get('/api/settings', (_req, res) => {
   masked.tts.apiKey = mask(settings.tts.apiKey);
   masked.pexels.apiKey = mask(settings.pexels.apiKey);
   masked.pixabay.apiKey = mask(settings.pixabay?.apiKey ?? '');
+  masked.media = {
+    ...settings.media,
+    zaiKey: mask(settings.media?.zaiKey ?? ''),
+  } as typeof masked.media;
   masked.youtube.clientSecret = mask(settings.youtube.clientSecret);
   masked.youtube.refreshToken = mask(settings.youtube.refreshToken);
   masked.tiktok.accessToken = mask(settings.tiktok.accessToken);
@@ -78,6 +80,7 @@ app.put('/api/settings', (req, res) => {
       tts: { ...current.tts, ...inc.tts },
       pexels: { ...current.pexels, ...inc.pexels },
       pixabay: { apiKey: inc.pixabay?.apiKey ?? '' },
+      media: { ...current.media, ...inc.media },
       stock: { provider: inc.stock?.provider ?? current.stock?.provider ?? 'pixabay' },
       youtube: { ...current.youtube, ...inc.youtube },
       tiktok: { ...current.tiktok, ...inc.tiktok },
@@ -92,6 +95,10 @@ app.put('/api/settings', (req, res) => {
     merged.pexels.apiKey = keepSecret(current.pexels.apiKey, merged.pexels.apiKey);
     merged.pixabay = merged.pixabay ?? { apiKey: '' };
     merged.pixabay.apiKey = keepSecret(current.pixabay?.apiKey ?? '', merged.pixabay.apiKey);
+    merged.media = merged.media ?? {
+      mode: 'ai', aiProvider: 'pollinations', aiModel: 'flux', aiStyle: '', zaiKey: '',
+    };
+    merged.media.zaiKey = keepSecret(current.media?.zaiKey ?? '', merged.media.zaiKey);
     merged.youtube.clientSecret = keepSecret(current.youtube.clientSecret, merged.youtube.clientSecret);
     merged.youtube.refreshToken = keepSecret(current.youtube.refreshToken, merged.youtube.refreshToken);
     merged.tiktok.accessToken = keepSecret(current.tiktok.accessToken, merged.tiktok.accessToken);
@@ -206,69 +213,15 @@ app.delete('/api/videos/:id', (req, res) => {
   });
 });
 
-// ---------- posts ----------
-app.get('/api/posts', (_req, res) => {
-  const posts = store.posts();
-  const videos = store.videos();
-  res.json(posts.map((p) => ({
-    ...p,
-    videoTitle: videos.find((v) => v.id === p.videoId)?.title ?? '(video removido)',
-    videoThumb: videos.find((v) => v.id === p.videoId)?.thumb ?? null,
-  })));
-});
-
-app.post('/api/posts', (req, res) => {
-  respond(res, () => {
-    const { videoId, platform, scheduledAt } = req.body as { videoId: string; platform: Post['platform']; scheduledAt: string };
-    const video = store.videos().find((v) => v.id === videoId);
-    if (!video) throw new Error('video nao encontrado');
-    if (video.status !== 'rendered') throw new Error('video precisa estar renderizado');
-    const cfgErr = checkPublishConfig(store.settings(), platform);
-    if (cfgErr) throw new Error(cfgErr);
-    const post: Post = {
-      id: uid(),
-      videoId,
-      platform,
-      scheduledAt: scheduledAt || new Date().toISOString(),
-      status: 'scheduled',
-      remoteId: null,
-      remoteUrl: null,
-      error: null,
-      createdAt: new Date().toISOString(),
-      postedAt: null,
-    };
-    const posts = store.posts();
-    posts.push(post);
-    store.savePosts(posts);
-    return post;
-  });
-});
-
-app.post('/api/posts/:id/publish', (req, res) => {
-  respond(res, async () => {
-    const posts = store.posts();
-    const post = posts.find((p) => p.id === req.params.id);
-    if (!post) throw new Error('post nao encontrado');
-    const video = store.videos().find((v) => v.id === post.videoId);
-    if (!video) throw new Error('video nao encontrado');
-    post.status = 'publishing';
-    store.savePosts(posts);
-    const result = await publishNow(store.settings(), video, post);
-    post.status = 'posted';
-    post.remoteId = result.remoteId;
-    post.remoteUrl = result.remoteUrl;
-    post.postedAt = new Date().toISOString();
-    store.savePosts(posts);
-    log('success', 'publish', `${post.platform}: ${video.title} publicado manualmente`);
-    return result;
-  });
-});
-
-app.delete('/api/posts/:id', (req, res) => {
-  respond(res, () => {
-    store.savePosts(store.posts().filter((p) => p.id !== req.params.id));
-    return { ok: true };
-  });
+// download do MP4 renderizado (nome de arquivo amigavel baseado no titulo)
+app.get('/api/videos/:id/download', (req, res) => {
+  const video = store.videos().find((v) => v.id === req.params.id);
+  if (!video || video.status !== 'rendered') return res.status(404).json({ error: 'video renderizado nao encontrado' });
+  const file = path.join(MEDIA_DIR, video.id, video.file || 'final.mp4');
+  if (!fs.existsSync(file)) return res.status(404).json({ error: 'arquivo do video ausente' });
+  const slug = video.title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'shortforge';
+  res.download(file, `${slug}.mp4`);
 });
 
 // ---------- worker ----------
