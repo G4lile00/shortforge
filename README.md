@@ -79,7 +79,15 @@ Por padrao o app responde na raiz (`/`).
 No campo **Modelos** das Configuracoes, informe varios modelos separados por virgula, ex.:
 
 ```
-deepseek/deepseek-chat-v3.1:free,meta-llama/llama-3.3-70b-instruct:free,qwen/qwen-2.5-72b-instruct:free
+openrouter/free,google/gemma-4-31b-it:free,nvidia/nemotron-3.5-lightning:free,baidu/ernie-5.5-flash-preview:free
 ```
+
+Dica: o slug especial `openrouter/free` roteia automaticamente entre os gratuitos disponiveis no momento. Para ver a lista atualizada, consulte a API publica:
+
+```bash
+curl -s https://openrouter.ai/api/v1/models | python3 -c "import json,sys; [print(m['id']) for m in json.load(sys.stdin)['data'] if float(m['pricing']['prompt'])==0 and float(m['pricing']['completion'])==0]"
+```
+
+O catalogo gratuito muda com frequencia (modelos saem do ar) - por isso o sistema cicla e faz fallback: se um slug sumir (erro 404) ou bater limite, o proximo da lista assume.
 
 A cada geracao o sistema comeca pelo proximo modelo da lista (round-robin) e, se um modelo falhar ou bater o limite de taxa, cai automaticamente para o seguinte. Confira sempre a lista atual de modelos gratuitos em https://openrouter.ai/models?q=free — o catalogo muda com frequencia.

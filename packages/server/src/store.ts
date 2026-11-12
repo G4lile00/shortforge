@@ -31,7 +31,7 @@ export const DEFAULT_SETTINGS: Settings = {
   llm: {
     baseUrl: 'https://openrouter.ai/api/v1',
     apiKey: '',
-    model: 'deepseek/deepseek-chat-v3.1:free',
+    model: 'openrouter/free,google/gemma-4-31b-it:free,nvidia/nemotron-3.5-lightning:free,baidu/ernie-5.5-flash-preview:free',
   },
   tts: {
     provider: 'edge',
