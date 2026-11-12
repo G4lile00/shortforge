@@ -106,10 +106,20 @@ export async function ttsToFile(settings: Settings, text: string, outFile: strin
       }
       return;
     }
-    // CLI edge-tts (Python) - mantido como alternativa
-    await execFileAsync('edge-tts', ['--voice', settings.tts.voice, '--text', text, '--write-media', outFile], { timeout: 120000 });
-    if (!fs.existsSync(outFile)) throw new Error('edge-tts nao gerou o arquivo de audio (instale com: pipx install edge-tts)');
-    return;
+    // CLI edge-tts (Python) - mantido como alternativa; cai para o nativo se o binario nao existir
+    try {
+      await execFileAsync('edge-tts', ['--voice', settings.tts.voice, '--text', text, '--write-media', outFile], { timeout: 120000 });
+      if (!fs.existsSync(outFile)) throw new Error('edge-tts nao gerou o arquivo de audio (instale com: pipx install edge-tts)');
+      return;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('ENOENT')) {
+        log('warn', 'tts', 'CLI edge-tts nao encontrado - usando narracao nativa (msedge-tts). Mude o provedor para "Nativo" nas Configuracoes para sumir com este aviso.');
+        const fallback: Settings = { ...settings, tts: { ...settings.tts, provider: 'edge' } };
+        return ttsToFile(fallback, text, outFile);
+      }
+      throw err;
+    }
   }
   const res = await fetch(`${settings.tts.baseUrl.replace(/\/$/, '')}/audio/speech`, {
     method: 'POST',
