@@ -75,6 +75,7 @@ export interface Settings {
     apiKey: string;
     model: string;     // ex: tts-1
     voice: string;     // ex: pt-BR-AntonioNeural (edge) ou alloy (openai)
+    rate: string;      // velocidade da fala edge, ex '+10%' ou '-10%' ('' = padrao)
   };
   media: {
     mode: 'ai' | 'stock';          // origem do visual: IA generativa ou banco licenciado

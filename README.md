@@ -18,6 +18,7 @@ shortforge/
 - **Node.js >= 20** (ou Bun) e npm
 - **FFmpeg** no PATH: `sudo apt install ffmpeg`
 - *(opcional)* CLI edge-tts em Python como alternativa de narracao: `pipx install edge-tts` (a narracao padrao, msedge-tts, ja vem embutida no servidor)
+- **Voz da narracao**: escolha na aba Configuracoes. Vozes disponiveis no servico gratuito da Microsoft: **Thalita** (pt-BR, feminina, a mais natural — padrao), Antonio e Francisca (pt-BR) e as multilingual Andrew, Ava, Brian e Emma (falam portugues com mais naturalidade). Tambem da para ajustar o ritmo da fala (-15% a +25%) ou digitar qualquer outro ShortName da lista da Microsoft (ex: `pt-PT-DuarteNeural`) no campo de voz personalizada
 - **Visual do video**: por padrao as imagens sao geradas por IA via **Pollinations** (gratuito, sem chave e sem cadastro). Opcional: **Z.ai** com modelo `cogview-3-flash` (gratuito com a API key) — a mesma key da Z.ai/GLM serve. Como fallback automatico, use uma **API key gratuita da Pixabay** (https://pixabay.com/api/docs/) e/ou Pexels (https://www.pexels.com/api/)
 - Uma API de LLM (gratuita ou paga):
   - **Gratuita**: OpenRouter (modelos `:free`) ou Groq (`llama-3.3-70b-versatile`)

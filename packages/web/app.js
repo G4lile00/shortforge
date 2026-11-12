@@ -68,7 +68,7 @@ async function renderPainel(el) {
   ];
   const deps = [
     ['FFmpeg', st.ffmpeg, 'necessario para renderizar os videos (instale: apt install ffmpeg)'],
-    ['Narracao nativa (msedge-tts)', st.ttsBundled, 'vozes neurais pt-BR embutidas, sem Python e sem chave de API'],
+    ['Narracao nativa (msedge-tts)', st.ttsBundled, 'vozes neurais Microsoft (Thalita, Antonio, Andrew...) embutidas, sem Python e sem chave de API'],
     ['Worker automatico', st.worker.enabled, `intervalo de ${st.worker.intervalMin} min - meta: ${st.worker.dailyTarget} videos/dia`],
   ];
   el.innerHTML = `
@@ -369,7 +369,7 @@ async function renderConfig(el) {
 
       <div class="rounded-2xl border border-forge-border bg-forge-panel p-6 space-y-3">
         <h2 class="font-bold">IA - Narracao (TTS)</h2>
-        <p class="text-xs text-forge-muted -mt-2">Padrao: narracao nativa (msedge-tts) com vozes neurais Microsoft em pt-BR, vem embutida no servidor - nao precisa instalar nada. Alternativas: CLI edge-tts em Python (pipx install edge-tts) ou TTS compativel com OpenAI (tts-1, voice: alloy/nova...).</p>
+        <p class="text-xs text-forge-muted -mt-2">Padrao: narracao nativa (msedge-tts) com vozes neurais Microsoft, vem embutida no servidor - nao precisa instalar nada. A voz Thalita e a mais nova e natural; as vozes multilingual (Andrew, Ava...) sao tecnicamente em ingles mas falam portugues com muito mais naturalidade que as antigas. O ritmo da fala tambem pode ser ajustado. Alternativas: CLI edge-tts em Python (pipx install edge-tts) ou TTS compativel com OpenAI (tts-1, voice: alloy/nova...).</p>
         ${select('Provedor', 'tts_provider', SETTINGS.tts.provider, [['edge', 'Nativo (msedge-tts, sem Python)'], ['edge-tts', 'CLI edge-tts (Python)'], ['openai', 'OpenAI-compativel (pago)']])}
         <div id="ttsFields" class="space-y-3"></div>
       </div>
@@ -408,10 +408,25 @@ async function renderConfig(el) {
     </form>`;
 
   const ttsFields = $('#ttsFields', el);
+  const EDGE_VOICES = [
+    ['pt-BR-ThalitaMultilingualNeural', 'Thalita - feminina, a mais natural e atual (recomendada)'],
+    ['pt-BR-AntonioNeural', 'Antonio - masculina, padrao anterior'],
+    ['pt-BR-FranciscaNeural', 'Francisca - feminina'],
+    ['en-US-AndrewMultilingualNeural', 'Andrew - masculina (multilingual), fala pt-BR, muito natural'],
+    ['en-US-AvaMultilingualNeural', 'Ava - feminina (multilingual), fala pt-BR, muito natural'],
+    ['en-US-BrianMultilingualNeural', 'Brian - masculina (multilingual), fala pt-BR'],
+    ['en-US-EmmaMultilingualNeural', 'Emma - feminina (multilingual), fala pt-BR'],
+  ];
+  const rateOpts = [['', 'Padrao (100%)'], ['-15%', 'Mais calmo (-15%)'], ['-8%', 'Levemente mais devagar (-8%)'], ['+8%', 'Levemente mais rapido (+8%)'], ['+15%', 'Mais agil (+15%)'], ['+25%', 'Muito rapido (+25%)']];
   const drawTts = () => {
     const p = $('[name=tts_provider]', el).value;
-    if (p === 'edge-tts') {
-      ttsFields.innerHTML = field('Voz', 'tts_voice', SETTINGS.tts.voice, 'pt-BR-AntonioNeural');
+    if (p === 'edge' || p === 'edge-tts') {
+      const cur = SETTINGS.tts.voice;
+      const opts = EDGE_VOICES.some(([v]) => v === cur) ? EDGE_VOICES : [[cur, cur + ' (atual)'], ...EDGE_VOICES];
+      ttsFields.innerHTML =
+        select('Voz', 'tts_voice', cur, opts) +
+        field('Voz personalizada (opcional, sobrescreve o seletor)', 'tts_voice_custom', '', 'ex: pt-BR-ThalitaMultilingualNeural ou pt-PT-DuarteNeural') +
+        select('Ritmo da fala', 'tts_rate', SETTINGS.tts.rate || '', rateOpts);
     } else {
       ttsFields.innerHTML = field('Base URL', 'tts_baseUrl', SETTINGS.tts.baseUrl) + field('API Key', 'tts_apiKey', SETTINGS.tts.apiKey) + field('Modelo', 'tts_model', SETTINGS.tts.model) + field('Voz', 'tts_voice', SETTINGS.tts.voice, 'alloy');
     }
@@ -427,7 +442,7 @@ async function renderConfig(el) {
     try {
       await api('api/settings', { method: 'PUT', body: {
         llm: { baseUrl: v('llm_baseUrl'), apiKey: v('llm_apiKey'), model: v('llm_model') },
-        tts: { provider: v('tts_provider'), baseUrl: v('tts_baseUrl') || SETTINGS.tts.baseUrl, apiKey: v('tts_apiKey') || SETTINGS.tts.apiKey, model: v('tts_model') || SETTINGS.tts.model, voice: v('tts_voice') },
+        tts: { provider: v('tts_provider'), baseUrl: v('tts_baseUrl') || SETTINGS.tts.baseUrl, apiKey: v('tts_apiKey') || SETTINGS.tts.apiKey, model: v('tts_model') || SETTINGS.tts.model, voice: v('tts_voice_custom') || v('tts_voice') || SETTINGS.tts.voice, rate: v('tts_rate') || '' },
         pexels: { apiKey: v('pexels_apiKey') },
         pixabay: { apiKey: v('pixabay_apiKey') },
         stock: { provider: v('stock_provider') },

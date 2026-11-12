@@ -38,7 +38,8 @@ export const DEFAULT_SETTINGS: Settings = {
     baseUrl: 'https://api.openai.com/v1',
     apiKey: '',
     model: 'gpt-4o-mini-tts',
-    voice: 'pt-BR-AntonioNeural',
+    voice: 'pt-BR-ThalitaMultilingualNeural',
+    rate: '',
   },
   media: {
     mode: 'ai',
@@ -61,7 +62,17 @@ export const DEFAULT_SETTINGS: Settings = {
 
 export const store = {
   settings(): Settings {
-    return { ...DEFAULT_SETTINGS, ...readJson('settings.json', {}) as Partial<Settings> } as Settings;
+    // merge por secao: settings.json antigo nao perde campos novos (ex: tts.rate)
+    const f = readJson<Partial<Settings>>('settings.json', {});
+    return {
+      ...DEFAULT_SETTINGS,
+      ...f,
+      llm: { ...DEFAULT_SETTINGS.llm, ...f.llm },
+      tts: { ...DEFAULT_SETTINGS.tts, ...f.tts },
+      media: { ...DEFAULT_SETTINGS.media, ...f.media },
+      stock: { ...DEFAULT_SETTINGS.stock, ...f.stock },
+      worker: { ...DEFAULT_SETTINGS.worker, ...f.worker },
+    } as Settings;
   },
   saveSettings(s: Settings) {
     writeJson('settings.json', s);
